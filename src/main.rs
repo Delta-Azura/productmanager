@@ -60,7 +60,10 @@ impl App {
             Message::QtChanged(v) => self.qt = v, 
             Message::Add => {
                 if let Ok(qt) = self.qt.parse::<u32>() {
-                    let _ = writedb(&self.conn, &self.code, &self.date, qt);
+                    match writedb(&self.conn, &self.code, &self.date, qt) {
+                        Ok(_) => {println!("ok");}
+                        Err(e) => eprintln!("{e:#}"),
+                    }
                     self.products = sort(&self.conn).unwrap_or_default();
                     self.code.clear();
                     self.date.clear();
