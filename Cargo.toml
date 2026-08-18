@@ -9,3 +9,5 @@ anyhow = "1.0"
 directories = "6"
 chrono = "0.4"
 iced = "0.14.0"
+notify-rust = "4"
+
