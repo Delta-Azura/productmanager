@@ -159,8 +159,14 @@ impl App {
 
     fn view(&self) -> Element<'_, Message> {
         let tab = row![
-            button("Promotions").on_press(Message::SwitchTab(Tabs::Promotions)),
-            button("Peremptions").on_press(Message::SwitchTab(Tabs::Peremptions)),
+            button("Promotions").on_press(Message::SwitchTab(Tabs::Promotions)).style(if self.tabs == Tabs::Promotions {
+                button::primary } else {
+                    button::secondary
+                }),
+            button("Peremptions").on_press(Message::SwitchTab(Tabs::Peremptions)).style(if self.tabs == Tabs::Peremptions {
+                button::primary } else {
+                    button::secondary
+                }),
         ].spacing(10);
         match self.tabs {
             Tabs::Peremptions => {

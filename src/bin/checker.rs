@@ -18,7 +18,7 @@
 
 //#![windows_subsystem = "windows"]
 
-use ProductManager::{opendb, sort};
+use ProductManager::{opendb, sort, sortpromo};
 use anyhow::{Context, Result};
 use chrono::{Local, NaiveDate, Days};
 use notify_rust::Notification;
@@ -40,5 +40,21 @@ pub fn  main() -> Result<()> {
                 .show()?;
         }
     }
+    let conn = opendb().context("Failed to opendatabase")?;
+    let list = sortpromo(&conn).context("Failed to sort the database")?;
+    let today = Local::now().date_naive();
+    let limit = today + Days::new(1);
+    for i in list {
+        let (code, date, qt, _) = i;
+        let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
+            .context("Date not readable in database")?;
+        if date <= limit {
+            Notification::new()
+                .summary("La promotion pour le produit suivant se termine demain")
+                .body(&format!("{}", code))
+                .show()?;
+        }
+    }
+
     Ok(())
 }

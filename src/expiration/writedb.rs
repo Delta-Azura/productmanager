@@ -23,6 +23,9 @@ use crate::input;
 
 pub fn writedb(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
     let date = input(date)?;
+    if code.len() != 13 {
+        anyhow::bail!("Code barre incorrect ou incomplet")
+    }
     db.execute(
         "CREATE TABLE IF NOT EXISTS produits (
             id   INTEGER PRIMARY KEY,
