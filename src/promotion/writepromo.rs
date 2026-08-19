@@ -19,8 +19,12 @@ use crate::input;
 use anyhow::{Result};
 use rusqlite::Connection;
 
-pub fn writepromo(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
+pub fn writepromo(db: &Connection, code: &str, date: &str, qt: Option<u32>) -> Result<()> {
     let date = input(date)?;
+    if code.len() != 13 {
+        anyhow::bail!("Le code barre est incorrect")
+    }
+    let quantity = qt.unwrap_or_else(|| 0);
     db.execute(
         "CREATE TABLE IF NOT EXISTS promotions (
             id   INTEGER PRIMARY KEY,
@@ -32,9 +36,9 @@ pub fn writepromo(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
         [],
     )?;
     db.execute(
-        "INSERT INTO produits (code, date, qt) VALUES (?1, ?2, ?3)
+        "INSERT INTO promotions (code, date, qt) VALUES (?1, ?2, ?3)
         ON CONFLICT(code, date) DO UPDATE SET qt = qt + ?3",
-        (code, date, qt),
+        (code, date, quantity),
     )?;
     Ok(())
 }

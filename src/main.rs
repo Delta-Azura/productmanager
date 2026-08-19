@@ -107,7 +107,7 @@ impl App {
             Message::AddPromo => {
                 self.status = None;
                 if let Ok(qt) = self.qt.parse::<u32>() {
-                    match writepromo(&self.conn, &self.code, &self.date, qt) {
+                    match writepromo(&self.conn, &self.code, &self.date, Some(qt)) {
                         Ok(_) => {}
                         Err(e) => {
                             self.status = Some(format!("Ajout impossible: {e:#}"));
