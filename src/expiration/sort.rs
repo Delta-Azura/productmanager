@@ -18,9 +18,9 @@
 use anyhow::Result;
 use rusqlite::Connection;
 
-pub fn sort(db: &Connection) -> Result<Vec<(String, String, u32)>> {
+pub fn sort(db: &Connection) -> Result<Vec<(String, String, u32, i64)>> {
     let mut list = db.prepare(
-        "SELECT code, date, qt FROM produits ORDER BY date ASC"
+        "SELECT code, date, qt, id FROM produits ORDER BY date ASC"
     )?;
     // execute the prepared query, and for each row, read its columns
     // (code, date, qt) into a tuple
@@ -29,6 +29,7 @@ pub fn sort(db: &Connection) -> Result<Vec<(String, String, u32)>> {
             row.get(0)?,
             row.get(1)?,
             row.get(2)?,
+            row.get(3)?,
         ))
     })?;
     let mut data = Vec::new();

@@ -15,8 +15,10 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use promochecker::{opendb, writedb, sort, input};
-use iced::widget::{button, column, row, text, text_input};
+use promochecker::{opendb, writedb, sort, remove};
+use iced::widget::{button, column, row, text, text_input, space};
+use iced::Length;
+
 use iced::{Element, Task};
 use rusqlite::Connection;
 
@@ -25,12 +27,13 @@ struct App {
     code: String,
     date: String, 
     qt: String,
-    products: Vec<(String, String, u32)>  
+    products: Vec<(String, String, u32, i64)>, 
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     Add,
+    Remove(i64),
     //Remove(String),
     CodeChanged(String), 
     DateChanged(String),
@@ -43,7 +46,7 @@ impl App {
         let conn = opendb().expect("Impossible to open database");
         let products = sort(&conn).unwrap_or_default(); 
         let app = Self {
-            conn, 
+            conn,
             code: String::new(),
             date: String::new(),
             qt: String::new(),
@@ -70,6 +73,10 @@ impl App {
                     self.qt.clear();
                 }
             }
+            Message::Remove(id) => { 
+                remove(&self.conn, id); 
+                self.products = sort(&self.conn).unwrap_or_default();
+            }
         }
         Task::none()
     }
@@ -82,9 +89,14 @@ impl App {
             button("Ajouter").on_press(Message::Add),
         ]
         .spacing(10);
-        let mut list = column![].spacing(5);
-        for (code, date, qt) in &self.products {
-            list = list.push(text(format!("{code} {date} x{qt}")))
+        let mut list = column![].spacing(20);
+        for (code, date, qt, id) in &self.products {
+            let line = row![
+                text(format!("Id : {id} Code Produit : {code} Date : {date} x{qt}")).width(Length::Fill),
+                button("Supprimer").on_press(Message::Remove(*id)),
+
+            ].spacing(30);
+            list = list.push(line);
         }
         column![input, list].spacing(20).padding(20).into()
     }

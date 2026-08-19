@@ -15,30 +15,16 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use anyhow::Result;
+
+use anyhow::{Context, Result};
 use rusqlite::Connection;
-use crate::input;
-use crate::id;
 
 
-
-pub fn writedb(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
-    let date = input(date)?;
-    let id: i64 = id(db)?;
-    db.execute(
-        "CREATE TABLE IF NOT EXISTS produits (
-            id   INTEGER PRIMARY KEY,
-            code TEXT NOT NULL,
-            date TEXT NOT NULL,
-            qt   INTEGER NOT NULL,
-            UNIQUE(code, date)
-        )", 
-        [],
+pub fn id(db: &Connection) -> Result<i64> {
+    let n: i64 = db.query_row(
+        "SELECT COUNT(*) FROM produits",
+        [], 
+        |row| row.get(0),
     )?;
-    db.execute(
-        "INSERT INTO produits (id, code, date, qt) VALUES (?1, ?2, ?3)
-        ON CONFLICT(code, date) DO UPDATE SET qt = qt + ?3",
-        (id, code, date, qt),
-    )?;
-    Ok(())
+    Ok(n)
 }

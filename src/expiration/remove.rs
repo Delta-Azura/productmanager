@@ -15,30 +15,11 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use anyhow::Result;
+
+use anyhow::{Context, Result};
 use rusqlite::Connection;
-use crate::input;
-use crate::id;
 
-
-
-pub fn writedb(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
-    let date = input(date)?;
-    let id: i64 = id(db)?;
-    db.execute(
-        "CREATE TABLE IF NOT EXISTS produits (
-            id   INTEGER PRIMARY KEY,
-            code TEXT NOT NULL,
-            date TEXT NOT NULL,
-            qt   INTEGER NOT NULL,
-            UNIQUE(code, date)
-        )", 
-        [],
-    )?;
-    db.execute(
-        "INSERT INTO produits (id, code, date, qt) VALUES (?1, ?2, ?3)
-        ON CONFLICT(code, date) DO UPDATE SET qt = qt + ?3",
-        (id, code, date, qt),
-    )?;
+pub fn remove(db: &Connection, id: i64) -> Result<()> {
+    db.execute("DELETE FROM produits WHERE id = ?1", [id])?;
     Ok(())
 }
