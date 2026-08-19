@@ -16,7 +16,7 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use promochecker::{opendb, writedb, sort, remove};
-use iced::widget::{button, column, row, text, text_input, Space, container};
+use iced::widget::{button, column, row, text, text_input, container};
 use iced::Length;
 use iced::{Element, Task};
 use rusqlite::Connection;
@@ -75,7 +75,7 @@ impl App {
                     }
                     match sort(&self.conn) {
                         Ok(list) => self.products = list,
-                        Err(e) => self.status = Some(format!("Impossible d'écrire dans la base de donnée {e:#}")),
+                        Err(e) => self.status = Some(format!("Impossible de lire dans la base de donnée {e:#}")),
 
                     }
                     self.code.clear();

@@ -30,7 +30,7 @@ pub fn  main() -> Result<()> {
     let today = Local::now().date_naive();
     let limit = today + Days::new(30);
     for i in list {
-        let (code, date, qt) = i;
+        let (code, date, qt, _) = i;
         let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
             .context("Date not readable in database")?;
         if date <= limit {
