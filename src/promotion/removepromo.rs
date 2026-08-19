@@ -18,7 +18,7 @@
 use anyhow::{Result};
 use rusqlite::Connection;
 
-pub fn remove(db: &Connection, id: i64) -> Result<()> {
+pub fn removepromo(db: &Connection, id: i64) -> Result<()> {
     db.execute("DELETE FROM promotions WHERE id = ?1", [id])?;
     Ok(())
 }

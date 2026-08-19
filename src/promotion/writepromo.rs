@@ -15,7 +15,11 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-pub fn writedb(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
+use crate::input;
+use anyhow::{Result};
+use rusqlite::Connection;
+
+pub fn writepromo(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
     let date = input(date)?;
     db.execute(
         "CREATE TABLE IF NOT EXISTS promotions (
