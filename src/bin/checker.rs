@@ -18,7 +18,7 @@
 
 //#![windows_subsystem = "windows"]
 
-use promochecker::{opendb, sort};
+use ProductManager::{opendb, sort};
 use anyhow::{Context, Result};
 use chrono::{Local, NaiveDate, Days};
 use notify_rust::Notification;

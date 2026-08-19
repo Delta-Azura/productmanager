@@ -28,8 +28,8 @@ struct App {
     qt: String,
     products: Vec<(String, String, u32, i64)>, 
     status: Option<String>,
-    onglet: String,
     tabs: Tabs,
+    promoproducts: Vec<(String, String, Option<u32>, i64)>
 
 }
 
@@ -42,7 +42,9 @@ pub enum Message {
     DateChanged(String),
     QtChanged(String),
     DisplayPromo,
-    SwitchTab,
+    SwitchTab(Tabs),
+    AddPromo,
+    RemovePromo(i64)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -54,7 +56,8 @@ pub enum Tabs {
 impl App {
     pub fn new() -> (Self, Task<Message>) {
         let conn = opendb().expect("Impossible to open database");
-        let products = sort(&conn).unwrap_or_default(); 
+        let products = sort(&conn).unwrap_or_default();
+        let promoproducts = sortpromo(&conn).unwrap_or_default(); 
         let app = Self {
             conn,
             code: String::new(),
@@ -63,49 +66,21 @@ impl App {
             products,
             status: None,
             tabs: Tabs::Peremptions,
+            promoproducts, 
+
         };
         (app, Task::none())
     
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
-        match tabs {
-            Tabs::Promotions => {
-                match message {
-                    Message::Remove(id) => {
-                        let _ = removepromo(&self.conn, id);
-                    }
-                    Message::Add => {
-                        self.status = None;
-                        if let Ok(qt) = self.qt.parse::<u32>() {
-                            match writedb(&self.conn, &self.code, &self.date, qt) {
-                                Ok(_) => {}
-                                Err(e) => {
-                                    self.status = Some(format!("Ajout impossible: {e:#}"));
-                                    // in order to not leave the insertion fields empty
-                                    return Task::none();
-                                }
-                            }
-                            match sortpromo(&self.conn) {
-                                Ok(list) => self.products = list,
-                                Err(e) => self.status = Some(format!("Impossible de lire dans la base de donnée {e:#}")),
-
-                            }
-                            self.code.clear();
-                            self.date.clear();
-                            self.qt.clear();
-                        } else {
-                            self.status = Some("Impossible de parser la quantité indiquée".to_string());
-                        }
-                    }
-                }
-            }
-        }
+        
         match message {
             Message::CodeChanged(v) => self.code = v, 
             Message::DateChanged(v) => self.date = v,
             Message::QtChanged(v) => self.qt = v,
-
+            Message::SwitchTab(o) => self.tabs = o,
+            Message::DisplayPromo => {}
             Message::Add => {
                 self.status = None;
                 if let Ok(qt) = self.qt.parse::<u32>() {
@@ -129,6 +104,29 @@ impl App {
                     self.status = Some("Impossible de parser la quantité indiquée".to_string());
                 }
             }
+            Message::AddPromo => {
+                self.status = None;
+                if let Ok(qt) = self.qt.parse::<u32>() {
+                    match writepromo(&self.conn, &self.code, &self.date, qt) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            self.status = Some(format!("Ajout impossible: {e:#}"));
+                            // in order to not leave the insertion fields empty
+                            return Task::none();
+                        }
+                    }
+                    match sortpromo(&self.conn) {
+                        Ok(list) => self.promoproducts = list,
+                        Err(e) => self.status = Some(format!("Impossible de lire dans la base de donnée {e:#}")),
+
+                    }
+                    self.code.clear();
+                    self.date.clear();
+                    self.qt.clear();
+                } else {
+                    self.status = Some("Impossible de parser la quantité indiquée".to_string());
+                }
+            }
             Message::Remove(id) => {
                 self.status = None;
                 match remove(&self.conn, id) {
@@ -142,44 +140,90 @@ impl App {
                     Err(e) => self.status = Some(format!("Impossible de lire la base de donnée: {e}")),
                 }
             }
+            Message::RemovePromo(id) => {
+                self.status = None;
+                match removepromo(&self.conn, id) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        self.status = Some(format!("Une erreur s'est produite: {e:#}"));
+                    }                    
+                } 
+                match sortpromo(&self.conn) {
+                    Ok(list) => self.promoproducts = list,
+                    Err(e) => self.status = Some(format!("Impossible de lire la base de donnée: {e}")),
+                }
+            }
         }
         Task::none()
     }
 
     fn view(&self) -> Element<'_, Message> {
         let tab = row![
-            button("Promotions").on_press(Tabs::Promotions),
-            button("Peremptions").on_press(Tabs::Peremptions),
+            button("Promotions").on_press(Message::SwitchTab(Tabs::Promotions)),
+            button("Peremptions").on_press(Message::SwitchTab(Tabs::Peremptions)),
         ].spacing(10);
-        let input = row![
-            text_input("Code", &self.code).on_input(Message::CodeChanged).width(Length::FillPortion(1)),
-            text_input("Date", &self.date).on_input(Message::DateChanged).width(Length::FillPortion(1)),
-            text_input("Quantité", &self.qt).on_input(Message::QtChanged).width(Length::FillPortion(1)),
-            button("Afficher promotions").on_press(Message::DisplayPromo).width(Length::FillPortion(1)),
-            button("Ajouter").on_press(Message::Add),
-        ]
-        .spacing(10);
-        let mut list = column![].spacing(20);
-        for (code, date, qt, id) in &self.products {
-            let line = row![
-                text(format!("{code}")).size(18).width(Length::FillPortion(1)),
-                text(format!("{date}")).size(15).width(Length::FillPortion(1)),
-                text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
-                button("Supprimer").on_press(Message::Remove(*id)),
-            ].spacing(10);
-            let card = container(line)
-                .padding(12)
-                .width(Length::Fill)
-                .style(container::rounded_box);
-            list = list.push(card);
-        }
-        let mut content = column![input, list].spacing(20).padding(20);
-        if let Some(msg) = &self.status {
-            content = content.push(
-                text(msg).color(iced::Color::from_rgb(0.9, 0.2, 0.2))
-            )
-        }
-        content.into()
+        match self.tabs {
+            Tabs::Peremptions => {
+                let input = row![
+                    text_input("Code", &self.code).on_input(Message::CodeChanged).width(Length::FillPortion(1)),
+                    text_input("Date", &self.date).on_input(Message::DateChanged).width(Length::FillPortion(1)),
+                    text_input("Quantité", &self.qt).on_input(Message::QtChanged).width(Length::FillPortion(1)),
+                    button("Ajouter").on_press(Message::Add),
+                ].spacing(10);
+                let mut list = column![].spacing(20);
+                for (code, date, qt, id) in &self.products {
+                    let line = row![
+                        text(format!("{code}")).size(18).width(Length::FillPortion(1)),
+                        text(format!("{date}")).size(15).width(Length::FillPortion(1)),
+                        text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
+                        button("Supprimer").on_press(Message::Remove(*id)),
+                    ].spacing(10);
+                    let card = container(line)
+                        .padding(12)
+                        .width(Length::Fill)
+                        .style(container::rounded_box);
+                    list = list.push(card);
+                }
+                let mut content = column![tab, input, list].spacing(20).padding(20);
+                if let Some(msg) = &self.status {
+                    content = content.push(
+                        text(msg).color(iced::Color::from_rgb(0.9, 0.2, 0.2))
+                    )
+                }
+                return content.into()
+            }
+            Tabs::Promotions => {
+                let input = row![
+                    text_input("Code", &self.code).on_input(Message::CodeChanged).width(Length::FillPortion(1)),
+                    text_input("Date", &self.date).on_input(Message::DateChanged).width(Length::FillPortion(1)),
+                    text_input("Quantité", &self.qt).on_input(Message::QtChanged).width(Length::FillPortion(1)),
+                    button("Ajouter").on_press(Message::AddPromo),
+                ]
+                .spacing(10);
+                let mut list = column![].spacing(20);
+                for (code, date, qt, id) in &self.promoproducts {
+                    let qt = qt.unwrap_or_else(|| 0);
+                    let line = row![
+                        text(format!("{code}")).size(18).width(Length::FillPortion(1)),
+                        text(format!("{date}")).size(15).width(Length::FillPortion(1)),
+                        text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
+                        button("Supprimer").on_press(Message::RemovePromo(*id)),
+                    ].spacing(10);
+                    let card = container(line)
+                        .padding(12)
+                        .width(Length::Fill)
+                        .style(container::rounded_box);
+                    list = list.push(card);
+                }
+                let mut content = column![tab, input, list].spacing(20).padding(20);
+                if let Some(msg) = &self.status {
+                    content = content.push(
+                        text(msg).color(iced::Color::from_rgb(0.9, 0.2, 0.2))
+                    )
+                }
+                return content.into()
+            }
+        };
     }
 }
 

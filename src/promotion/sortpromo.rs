@@ -19,7 +19,7 @@ use anyhow::Result;
 use rusqlite::Connection;
 
 
-pub fn sortpromo(db: &Connection) -> Result<Vec<(String, String, u32, i64)>> {
+pub fn sortpromo(db: &Connection) -> Result<Vec<(String, String, Option<u32>, i64)>> {
     let mut list = db.prepare(
         "SELECT code, date, qt, id FROM promotions ORDER BY date ASC"
     )?;
