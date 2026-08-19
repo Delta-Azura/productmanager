@@ -28,5 +28,4 @@ pub use opendb::opendb;
 pub use writedb::writedb;
 pub use sort::sort;
 pub use input::input;
-pub use id::id;
 pub use remove::remove;

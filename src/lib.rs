@@ -17,4 +17,4 @@
 
 mod expiration;
 
-pub use expiration::{opendb, writedb, sort, input, id, remove};
+pub use expiration::{opendb, writedb, sort, input, remove};

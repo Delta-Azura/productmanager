@@ -18,13 +18,11 @@
 use anyhow::Result;
 use rusqlite::Connection;
 use crate::input;
-use crate::id;
 
 
 
 pub fn writedb(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
     let date = input(date)?;
-    let id: i64 = id(db)?;
     db.execute(
         "CREATE TABLE IF NOT EXISTS produits (
             id   INTEGER PRIMARY KEY,
@@ -36,9 +34,9 @@ pub fn writedb(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
         [],
     )?;
     db.execute(
-        "INSERT INTO produits (id, code, date, qt) VALUES (?1, ?2, ?3, ?4)
+        "INSERT INTO produits (code, date, qt) VALUES (?1, ?2, ?3)
         ON CONFLICT(code, date) DO UPDATE SET qt = qt + ?3",
-        (id, code, date, qt),
+        (code, date, qt),
     )?;
     Ok(())
 }

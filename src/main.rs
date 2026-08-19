@@ -63,11 +63,14 @@ impl App {
             Message::DateChanged(v) => self.date = v,
             Message::QtChanged(v) => self.qt = v, 
             Message::Add => {
+                self.status = None;
                 if let Ok(qt) = self.qt.parse::<u32>() {
                     match writedb(&self.conn, &self.code, &self.date, qt) {
                         Ok(_) => {}
                         Err(e) => {
-                            self.status = Some(format!("Quantité invalide {e:#}"));
+                            self.status = Some(format!("Ajout impossible: {e:#}"));
+                            // in order to not leave the insertion fields empty
+                            return Task::none();
                         }
                     }
                     match sort(&self.conn) {
@@ -82,7 +85,8 @@ impl App {
                     self.status = Some("Impossible de parser la quantité indiquée".to_string());
                 }
             }
-            Message::Remove(id) => { 
+            Message::Remove(id) => {
+                self.status = None;
                 match remove(&self.conn, id) {
                     Ok(_) => {}
                     Err(e) => {
