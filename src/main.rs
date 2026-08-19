@@ -15,7 +15,7 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use ProductManager::{opendb, writedb, sort, remove};
+use ProductManager::{opendb, writedb, sort, remove, removepromo, sortpromo, writepromo};
 use iced::widget::{button, column, row, text, text_input, container};
 use iced::Length;
 use iced::{Element, Task};
@@ -29,6 +29,7 @@ struct App {
     products: Vec<(String, String, u32, i64)>, 
     status: Option<String>,
     onglet: String,
+    tabs: Tabs,
 
 }
 
@@ -41,8 +42,10 @@ pub enum Message {
     DateChanged(String),
     QtChanged(String),
     DisplayPromo,
+    SwitchTab,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Tabs {
     Peremptions, 
     Promotions,
@@ -59,18 +62,18 @@ impl App {
             qt: String::new(),
             products,
             status: None,
-            tabs: None,
+            tabs: Tabs::Peremptions,
         };
         (app, Task::none())
     
     }
 
-    fn update(&mut self, message: Message, tabs: Tabs) -> Task<Message> {
+    fn update(&mut self, message: Message) -> Task<Message> {
         match tabs {
             Tabs::Promotions => {
                 match message {
                     Message::Remove(id) => {
-                        let _ = removepromo(&self.con, id)
+                        let _ = removepromo(&self.conn, id);
                     }
                     Message::Add => {
                         self.status = None;
@@ -147,7 +150,7 @@ impl App {
         let tab = row![
             button("Promotions").on_press(Tabs::Promotions),
             button("Peremptions").on_press(Tabs::Peremptions),
-        ]
+        ].spacing(10);
         let input = row![
             text_input("Code", &self.code).on_input(Message::CodeChanged).width(Length::FillPortion(1)),
             text_input("Date", &self.date).on_input(Message::DateChanged).width(Length::FillPortion(1)),
