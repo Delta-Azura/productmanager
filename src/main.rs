@@ -28,6 +28,8 @@ struct App {
     qt: String,
     products: Vec<(String, String, u32, i64)>, 
     status: Option<String>,
+    onglet: String,
+
 }
 
 #[derive(Debug, Clone)]
@@ -38,8 +40,13 @@ pub enum Message {
     CodeChanged(String), 
     DateChanged(String),
     QtChanged(String),
+    DisplayPromo,
 }
 
+pub enum Tabs {
+    Peremptions, 
+    Promotions,
+}
 
 impl App {
     pub fn new() -> (Self, Task<Message>) {
@@ -52,16 +59,50 @@ impl App {
             qt: String::new(),
             products,
             status: None,
+            tabs: None,
         };
         (app, Task::none())
     
     }
 
-    fn update(&mut self, message: Message) -> Task<Message> {
+    fn update(&mut self, message: Message, tabs: Tabs) -> Task<Message> {
+        match tabs {
+            Tabs::Promotions => {
+                match message {
+                    Message::Remove(id) => {
+                        let _ = removepromo(&self.con, id)
+                    }
+                    Message::Add => {
+                        self.status = None;
+                        if let Ok(qt) = self.qt.parse::<u32>() {
+                            match writedb(&self.conn, &self.code, &self.date, qt) {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    self.status = Some(format!("Ajout impossible: {e:#}"));
+                                    // in order to not leave the insertion fields empty
+                                    return Task::none();
+                                }
+                            }
+                            match sortpromo(&self.conn) {
+                                Ok(list) => self.products = list,
+                                Err(e) => self.status = Some(format!("Impossible de lire dans la base de donnée {e:#}")),
+
+                            }
+                            self.code.clear();
+                            self.date.clear();
+                            self.qt.clear();
+                        } else {
+                            self.status = Some("Impossible de parser la quantité indiquée".to_string());
+                        }
+                    }
+                }
+            }
+        }
         match message {
             Message::CodeChanged(v) => self.code = v, 
             Message::DateChanged(v) => self.date = v,
-            Message::QtChanged(v) => self.qt = v, 
+            Message::QtChanged(v) => self.qt = v,
+
             Message::Add => {
                 self.status = None;
                 if let Ok(qt) = self.qt.parse::<u32>() {
@@ -103,10 +144,15 @@ impl App {
     }
 
     fn view(&self) -> Element<'_, Message> {
+        let tab = row![
+            button("Promotions").on_press(Tabs::Promotions),
+            button("Peremptions").on_press(Tabs::Peremptions),
+        ]
         let input = row![
             text_input("Code", &self.code).on_input(Message::CodeChanged).width(Length::FillPortion(1)),
             text_input("Date", &self.date).on_input(Message::DateChanged).width(Length::FillPortion(1)),
             text_input("Quantité", &self.qt).on_input(Message::QtChanged).width(Length::FillPortion(1)),
+            button("Afficher promotions").on_press(Message::DisplayPromo).width(Length::FillPortion(1)),
             button("Ajouter").on_press(Message::Add),
         ]
         .spacing(10);
