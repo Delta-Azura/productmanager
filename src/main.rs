@@ -18,7 +18,6 @@
 use promochecker::{opendb, writedb, sort, remove};
 use iced::widget::{button, column, row, text, text_input, space};
 use iced::Length;
-
 use iced::{Element, Task};
 use rusqlite::Connection;
 
@@ -28,6 +27,7 @@ struct App {
     date: String, 
     qt: String,
     products: Vec<(String, String, u32, i64)>, 
+    status: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +51,7 @@ impl App {
             date: String::new(),
             qt: String::new(),
             products,
+            status: None,
         };
         (app, Task::none())
     
@@ -64,18 +65,34 @@ impl App {
             Message::Add => {
                 if let Ok(qt) = self.qt.parse::<u32>() {
                     match writedb(&self.conn, &self.code, &self.date, qt) {
-                        Ok(_) => {println!("ok");}
-                        Err(e) => eprintln!("{e:#}"),
+                        Ok(_) => {}
+                        Err(e) => {
+                            self.status = Some(format!("Quantité invalide {e:#}"));
+                        }
                     }
-                    self.products = sort(&self.conn).unwrap_or_default();
+                    match sort(&self.conn) {
+                        Ok(list) => self.products = list,
+                        Err(e) => self.status = Some(format!("Impossible d'écrire dans la base de donnée {e:#}")),
+
+                    }
                     self.code.clear();
                     self.date.clear();
                     self.qt.clear();
+                } else {
+                    self.status = Some("Impossible de parser la quantité indiquée".to_string());
                 }
             }
             Message::Remove(id) => { 
-                remove(&self.conn, id); 
-                self.products = sort(&self.conn).unwrap_or_default();
+                match remove(&self.conn, id) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        self.status = Some(format!("Une erreur s'est produite: {e:#}"));
+                    }                    
+                } 
+                match sort(&self.conn) {
+                    Ok(list) => self.products = list,
+                    Err(e) => self.status = Some(format!("Impossible de lire la base de donnée: {e}")),
+                }
             }
         }
         Task::none()
@@ -98,7 +115,13 @@ impl App {
             ].spacing(30);
             list = list.push(line);
         }
-        column![input, list].spacing(20).padding(20).into()
+        let mut content = column![input, list].spacing(20).padding(20);
+        if let Some(msg) = &self.status {
+            content = content.push(
+                text(msg).color(iced::Color::from_rgb(0.9, 0.2, 0.2))
+            )
+        }
+        content.into()
     }
 }
 

@@ -36,7 +36,7 @@ pub fn writedb(db: &Connection, code:&str, date:&str, qt:u32) -> Result<()> {
         [],
     )?;
     db.execute(
-        "INSERT INTO produits (id, code, date, qt) VALUES (?1, ?2, ?3)
+        "INSERT INTO produits (id, code, date, qt) VALUES (?1, ?2, ?3, ?4)
         ON CONFLICT(code, date) DO UPDATE SET qt = qt + ?3",
         (id, code, date, qt),
     )?;
