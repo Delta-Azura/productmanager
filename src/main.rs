@@ -1,4 +1,4 @@
-// Promochecker aims to be a graphical application to manage promotions of products
+// Promochecker aims to be a graphical application to manage promotions as well as expiration of products
 //    Copyright (C) 2026  Alexis/Delta-Azura
 
 //    This program is free software; you can redistribute it and/or modify
@@ -15,7 +15,7 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use promochecker::{opendb, writedb, sort, remove};
+use ProductManager::{opendb, writedb, sort, remove};
 use iced::widget::{button, column, row, text, text_input, container};
 use iced::Length;
 use iced::{Element, Task};
@@ -114,7 +114,7 @@ impl App {
         for (code, date, qt, id) in &self.products {
             let line = row![
                 text(format!("{code}")).size(18).width(Length::FillPortion(1)),
-                text(format!("{date}")).size(15),
+                text(format!("{date}")).size(15).width(Length::FillPortion(1)),
                 text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
                 button("Supprimer").on_press(Message::Remove(*id)),
             ].spacing(10);
@@ -136,6 +136,6 @@ impl App {
 
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
-        .title("PromoChecker")
+        .title("ProductManager")
         .run()
 }
