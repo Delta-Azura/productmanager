@@ -16,7 +16,7 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use promochecker::{opendb, writedb, sort, remove};
-use iced::widget::{button, column, row, text, text_input, space};
+use iced::widget::{button, column, row, text, text_input, Space, container};
 use iced::Length;
 use iced::{Element, Task};
 use rusqlite::Connection;
@@ -104,20 +104,25 @@ impl App {
 
     fn view(&self) -> Element<'_, Message> {
         let input = row![
-            text_input("Code", &self.code).on_input(Message::CodeChanged),
-            text_input("Date", &self.date).on_input(Message::DateChanged),
-            text_input("Quantité", &self.qt).on_input(Message::QtChanged),
+            text_input("Code", &self.code).on_input(Message::CodeChanged).width(Length::FillPortion(1)),
+            text_input("Date", &self.date).on_input(Message::DateChanged).width(Length::FillPortion(1)),
+            text_input("Quantité", &self.qt).on_input(Message::QtChanged).width(Length::FillPortion(1)),
             button("Ajouter").on_press(Message::Add),
         ]
         .spacing(10);
         let mut list = column![].spacing(20);
         for (code, date, qt, id) in &self.products {
             let line = row![
-                text(format!("Id : {id} Code Produit : {code} Date : {date} x{qt}")).width(Length::Fill),
+                text(format!("{code}")).size(18).width(Length::FillPortion(1)),
+                text(format!("{date}")).size(15),
+                text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
                 button("Supprimer").on_press(Message::Remove(*id)),
-
-            ].spacing(30);
-            list = list.push(line);
+            ].spacing(10);
+            let card = container(line)
+                .padding(12)
+                .width(Length::Fill)
+                .style(container::rounded_box);
+            list = list.push(card);
         }
         let mut content = column![input, list].spacing(20).padding(20);
         if let Some(msg) = &self.status {

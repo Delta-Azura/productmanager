@@ -19,7 +19,7 @@ use chrono::NaiveDate;
 use anyhow::{Context, Result};
 
 
-pub fn input(date: &str) -> Result<(NaiveDate)> {
+pub fn input(date: &str) -> Result<NaiveDate> {
     let dateinputs: Vec<&str> = date.split("/").collect();
     if dateinputs.len() != 3 {
         anyhow::bail!("Date format invalid");

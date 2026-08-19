@@ -21,7 +21,6 @@ mod opendb;
 mod writedb;
 mod sort;
 mod input;
-mod id;
 mod remove;
 
 pub use opendb::opendb;

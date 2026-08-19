@@ -16,7 +16,7 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-use anyhow::{Context, Result};
+use anyhow::{Result};
 use rusqlite::Connection;
 
 pub fn remove(db: &Connection, id: i64) -> Result<()> {
