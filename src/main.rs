@@ -188,7 +188,16 @@ impl App {
                     } else if days == 0 {
                         format!("Produit périmé aujourd'hui")
                     } else {
-                        format!("Périme sous {days} jours")
+                        if days < 7 {
+                            format!("Périme dans moins de 7 jours")
+                        } else if days == 7 {
+                            format!("Périme dans plus d'une semaine")
+                        } else if days == 30 {
+                            format!("Périme ce mois-ci")
+                        } else {
+                            let delay = days / 30;
+                            format!("Périme dans environ {delay} mois")
+                        }
                     };
                     let mut color = if days < 7 {
                         iced::Color::from_rgb(0.9, 0.3, 0.3)
