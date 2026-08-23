@@ -38,4 +38,3 @@ pub fn sort(db: &Connection) -> Result<Vec<(String, String, u32, i64)>> {
     }
     Ok(data)
 }
-

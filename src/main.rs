@@ -20,6 +20,8 @@ use iced::widget::{button, column, row, text, text_input, container};
 use iced::Length;
 use iced::{Element, Task};
 use rusqlite::Connection;
+use chrono::{Local, NaiveDate};
+
 
 struct App {
     conn: Connection,
@@ -178,8 +180,26 @@ impl App {
                 ].spacing(10);
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.products {
+                    let today = Local::now().date_naive();
+                    let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap();
+                    let mut days = ( d - today).num_days();
+                    let mut title = if days < 0 {
+                        format!("Produit prérimé depuis {} jours", -days)
+                    } else if days == 0 {
+                        format!("Produit périmé aujourd'hui")
+                    } else {
+                        format!("Périme sous {days} jours")
+                    };
+                    let mut color = if days < 7 {
+                        iced::Color::from_rgb(0.9, 0.3, 0.3)
+                    } else if days < 30 {
+                        iced::Color::from_rgb(0.9, 0.6, 0.2)
+                    } else {
+                        iced::Color::WHITE
+                    };
                     let line = row![
-                        text(format!("{code}")).size(18).width(Length::FillPortion(1)),
+                        text(title).color(color).size(25),
+                        text(format!("{code}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{date}")).size(15).width(Length::FillPortion(1)),
                         text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
                         button("Supprimer").on_press(Message::Remove(*id)),
