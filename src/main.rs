@@ -34,8 +34,12 @@ struct App {
     products: Vec<(String, String, u32, i64)>, 
     status: Option<String>,
     tabs: Tabs,
+    search: String,
     promoproducts: Vec<(String, String, Option<u32>, i64)>,
     filter: Filter,
+    datesearch: bool,
+    datestart: String,
+    dateend: String,
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +55,11 @@ pub enum Message {
     AddPromo,
     RemovePromo(i64), 
     ChoseFilter(Filter),
+    Search(String),
+    DateSearch(bool),
+    QueryDateChangedstart(String),
+    QueryDateChangedend(String),
+
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -85,11 +94,16 @@ impl App {
         let conn = opendb().expect("Impossible to open database");
         let products = sort(&conn).unwrap_or_default();
         let promoproducts = sortpromo(&conn).unwrap_or_default(); 
+        let datesearch = false;
         let app = Self {
             conn,
+            datesearch,
             code: String::new(),
             date: String::new(),
             qt: String::new(),
+            search: String::new(),
+            datestart: String::new(),
+            dateend: String::new(),
             products,
             status: None,
             tabs: Tabs::Peremptions,
@@ -110,6 +124,10 @@ impl App {
             Message::SwitchTab(o) => self.tabs = o,
             Message::ChoseFilter(o) => self.filter = o, 
             Message::DisplayPromo => {}
+            Message::Search(v) => self.search = v,
+            Message::DateSearch(v) => self.datesearch = v,
+            Message::QueryDateChangedstart(v) => self.datestart = v,
+            Message::QueryDateChangedend(v) => self.dateend = v,
             Message::Add => {
                 self.status = None;
                 if let Ok(qt) = self.qt.parse::<u32>() {
@@ -199,11 +217,25 @@ impl App {
         ].spacing(10);
         match self.tabs {
             Tabs::Peremptions => {
+                let querydate = if self.datesearch == true {
+                    row![
+                        text_input("Date de début : jj/MM/AAAA", &self.datestart).on_input(Message::QueryDateChangedstart),
+                        text_input("Date de fin : jj/MM/AAAA", &self.dateend).on_input(Message::QueryDateChangedend),
+                    ].spacing(10)
+                } else {
+                    row![]
+                };
+                let search_bar = text_input("Rechercher un produit...", &self.search).on_input(Message::Search);
                 let input = row![
                     text_input("Code", &self.code).on_input(Message::CodeChanged).width(Length::FillPortion(1)),
                     text_input("Date", &self.date).on_input(Message::DateChanged).width(Length::FillPortion(1)),
                     text_input("Quantité", &self.qt).on_input(Message::QtChanged).width(Length::FillPortion(1)),
                     button("Ajouter").on_press(Message::Add),
+                    if self.datesearch == true {
+                        button("Rechercher par date").on_press(Message::DateSearch(false))
+                    } else {
+                        button("Rechercher par date").on_press(Message::DateSearch(true))
+                    },
                 ].spacing(10);
                 let options = [Filter::Month, Filter::ThreeMonth, Filter::All];
                 let menu = pick_list(
@@ -218,6 +250,12 @@ impl App {
                 };
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.products {
+                    if !self.search.is_empty() && !code.contains(&self.search) {
+                        continue;
+                    }
+                    if !self.search.is_empty() && !code.contains("**") {
+
+                    }
                     let today = Local::now().date_naive();
                     let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap();
                     let mut days = ( d - today).num_days();
@@ -243,7 +281,7 @@ impl App {
                         .style(container::rounded_box);
                     list = list.push(card);
                 }
-                let mut content = column![tab, input, menu, list].spacing(20).padding(20);
+                let mut content = column![tab, input, querydate, search_bar, menu, list].spacing(20).padding(20);
                 if let Some(msg) = &self.status {
                     content = content.push(
                         text(msg).color(iced::Color::from_rgb(0.9, 0.2, 0.2))
