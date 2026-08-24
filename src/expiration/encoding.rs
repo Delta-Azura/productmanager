@@ -33,7 +33,7 @@ pub fn load(csv_path: &str) -> Result<Catalogue> {
     // idx: finds a column by its name in the header and returns its position.
     // .trim() strips surrounding whitespace; eq_ignore_ascii_case = case-insensitive match.
     let idx = |n: &str| headers.iter().position(|h| decode(h).trim().eq_ignore_ascii_case(n));
-    let c = idx("CIP").expect("Code not found");
+    let c = idx("Code produit").expect("Code not found");
     let d = idx("Désignation").expect("Designation not found");
     for rec in reader.byte_records() {
         let rec = rec?;
