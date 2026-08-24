@@ -134,7 +134,8 @@ impl App {
             Message::CodeLoaded(v) => {
                 match compare(&self.code, &self.catalogue) {
                     Ok(name) => {
-                        self.name = name;
+                        self.name = name.clone();
+                        println!("{}", name)
                     }
                     Err(e) => { 
                         self.status = Some(format!("Une erreur s'est produite: {e:#}"));
@@ -247,6 +248,7 @@ impl App {
                 } else {
                     row![]
                 };
+
                 let search_bar = text_input("Rechercher un produit...", &self.search).on_input(Message::Search);
                 let input = row![
                     text_input("Code", &self.code).on_input(Message::CodeChanged).width(Length::FillPortion(1)),
@@ -274,8 +276,7 @@ impl App {
                 };
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.products {
-                    //let name = self.name;
-                    Message::CodeLoaded(code.to_string());
+                    let name = compare(code, &self.catalogue).unwrap_or_else(|_| code.to_string());
                     if !self.search.is_empty() && !code.contains(&self.search) {
                         continue;
                     }
@@ -302,7 +303,7 @@ impl App {
                         continue;
                     }
                     let line = row![
-                        text(format!("{}", &self.name)).size(15).width(Length::FillPortion(1)),
+                        text(format!("{name}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{code}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{date}")).size(15).width(Length::FillPortion(1)),
                         text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
