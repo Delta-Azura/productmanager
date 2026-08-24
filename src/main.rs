@@ -109,7 +109,6 @@ impl App {
             tabs: Tabs::Peremptions,
             promoproducts,
             filter: Filter::All,
-
         };
         (app, Task::none())
     
@@ -219,8 +218,8 @@ impl App {
             Tabs::Peremptions => {
                 let querydate = if self.datesearch == true {
                     row![
-                        text_input("Date de début : jj/MM/AAAA", &self.datestart).on_input(Message::QueryDateChangedstart),
-                        text_input("Date de fin : jj/MM/AAAA", &self.dateend).on_input(Message::QueryDateChangedend),
+                        text_input("Date de début : JJ/MM/AAAA", &self.datestart).on_input(Message::QueryDateChangedstart),
+                        text_input("Date de fin : JJ/MM/AAAA", &self.dateend).on_input(Message::QueryDateChangedend),
                     ].spacing(10)
                 } else {
                     row![]
@@ -237,6 +236,8 @@ impl App {
                         button("Rechercher par date").on_press(Message::DateSearch(true))
                     },
                 ].spacing(10);
+                let start = NaiveDate::parse_from_str(&self.datestart, "%d/%m/%Y").ok();
+                let end = NaiveDate::parse_from_str(&self.dateend, "%d/%m/%Y").ok();
                 let options = [Filter::Month, Filter::ThreeMonth, Filter::All];
                 let menu = pick_list(
                     options,
@@ -253,12 +254,19 @@ impl App {
                     if !self.search.is_empty() && !code.contains(&self.search) {
                         continue;
                     }
-                    if !self.search.is_empty() && !code.contains("**") {
 
-                    }
                     let today = Local::now().date_naive();
                     let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap();
                     let mut days = ( d - today).num_days();
+                    if self.datesearch == true {
+                        if let Some(start) = start {
+                            if d < start { continue; }
+                        }
+
+                        if let Some(end) = end {
+                            if d > end { continue; }
+                        }
+                    }
                     let mut color = if days < 7 {
                         iced::Color::from_rgb(0.9, 0.3, 0.3)
                     } else if days < 30 {
