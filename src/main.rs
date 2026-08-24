@@ -21,6 +21,9 @@ use iced::Length;
 use iced::{Element, Task};
 use rusqlite::Connection;
 use chrono::{Local, NaiveDate};
+use iced::widget::pick_list;
+use std::fmt;
+
 
 
 struct App {
@@ -31,8 +34,8 @@ struct App {
     products: Vec<(String, String, u32, i64)>, 
     status: Option<String>,
     tabs: Tabs,
-    promoproducts: Vec<(String, String, Option<u32>, i64)>
-
+    promoproducts: Vec<(String, String, Option<u32>, i64)>,
+    filter: Filter,
 }
 
 #[derive(Debug, Clone)]
@@ -46,7 +49,8 @@ pub enum Message {
     DisplayPromo,
     SwitchTab(Tabs),
     AddPromo,
-    RemovePromo(i64)
+    RemovePromo(i64), 
+    ChoseFilter(Filter),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -54,6 +58,27 @@ pub enum Tabs {
     Peremptions, 
     Promotions,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Filter {
+    Month,
+    ThreeMonth,
+    All,
+}
+
+
+
+impl std::fmt::Display for Filter {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let text = match self {
+            Filter::Month => "Périme dans 1 mois",
+            Filter::ThreeMonth => "Périme dans 3 mois",
+            Filter::All => "Tout afficher"
+        };
+        write!(f, "{text}")
+    }
+}
+
 
 impl App {
     pub fn new() -> (Self, Task<Message>) {
@@ -68,7 +93,8 @@ impl App {
             products,
             status: None,
             tabs: Tabs::Peremptions,
-            promoproducts, 
+            promoproducts,
+            filter: Filter::All,
 
         };
         (app, Task::none())
@@ -82,6 +108,7 @@ impl App {
             Message::DateChanged(v) => self.date = v,
             Message::QtChanged(v) => self.qt = v,
             Message::SwitchTab(o) => self.tabs = o,
+            Message::ChoseFilter(o) => self.filter = o, 
             Message::DisplayPromo => {}
             Message::Add => {
                 self.status = None;
@@ -178,27 +205,22 @@ impl App {
                     text_input("Quantité", &self.qt).on_input(Message::QtChanged).width(Length::FillPortion(1)),
                     button("Ajouter").on_press(Message::Add),
                 ].spacing(10);
+                let options = [Filter::Month, Filter::ThreeMonth, Filter::All];
+                let menu = pick_list(
+                    options,
+                    Some(self.filter),
+                    Message::ChoseFilter,
+                );
+                let limit = match self.filter {
+                    Filter::Month => 30, 
+                    Filter::ThreeMonth => 90,
+                    Filter::All => i64::MAX,
+                };
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.products {
                     let today = Local::now().date_naive();
                     let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap();
                     let mut days = ( d - today).num_days();
-                    let mut title = if days < 0 {
-                        format!("Produit prérimé depuis {} jours", -days)
-                    } else if days == 0 {
-                        format!("Produit périmé aujourd'hui")
-                    } else {
-                        if days < 7 {
-                            format!("Périme dans moins de 7 jours")
-                        } else if days == 7 {
-                            format!("Périme dans plus d'une semaine")
-                        } else if days == 30 {
-                            format!("Périme ce mois-ci")
-                        } else {
-                            let delay = days / 30;
-                            format!("Périme dans environ {delay} mois")
-                        }
-                    };
                     let mut color = if days < 7 {
                         iced::Color::from_rgb(0.9, 0.3, 0.3)
                     } else if days < 30 {
@@ -206,8 +228,10 @@ impl App {
                     } else {
                         iced::Color::WHITE
                     };
+                    if days > limit {
+                        continue;
+                    }
                     let line = row![
-                        text(title).color(color).size(25),
                         text(format!("{code}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{date}")).size(15).width(Length::FillPortion(1)),
                         text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
@@ -219,7 +243,7 @@ impl App {
                         .style(container::rounded_box);
                     list = list.push(card);
                 }
-                let mut content = column![tab, input, list].spacing(20).padding(20);
+                let mut content = column![tab, input, menu, list].spacing(20).padding(20);
                 if let Some(msg) = &self.status {
                     content = content.push(
                         text(msg).color(iced::Color::from_rgb(0.9, 0.2, 0.2))
