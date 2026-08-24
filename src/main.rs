@@ -277,7 +277,8 @@ impl App {
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.products {
                     let name = compare(code, &self.catalogue).unwrap_or_else(|_| code.to_string());
-                    if !self.search.is_empty() && !code.contains(&self.search) {
+                    let q = self.search.to_lowercase();
+                    if !self.search.is_empty() && !code.contains(&self.search) && !name.to_lowercase().contains(&self.search) {
                         continue;
                     }
                     let today = Local::now().date_naive();
