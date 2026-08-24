@@ -15,8 +15,8 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-mod expiration;
+pub mod expiration;
 mod promotion;
 
 pub use promotion::{removepromo, sortpromo, writepromo};
-pub use expiration::{opendb, writedb, sort, input, remove};
+pub use expiration::{opendb, writedb, sort, input, remove, load, compare};

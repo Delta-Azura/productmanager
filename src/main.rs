@@ -15,7 +15,7 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use ProductManager::{opendb, writedb, sort, remove, removepromo, sortpromo, writepromo};
+use ProductManager::{opendb, writedb, sort, remove, removepromo, sortpromo, writepromo, load, compare};
 use iced::widget::{button, column, row, text, text_input, container};
 use iced::Length;
 use iced::{Element, Task};
@@ -23,7 +23,8 @@ use rusqlite::Connection;
 use chrono::{Local, NaiveDate};
 use iced::widget::pick_list;
 use std::fmt;
-
+use std::collections::HashMap;
+use ProductManager::expiration::encoding::Catalogue;
 
 
 struct App {
@@ -40,6 +41,9 @@ struct App {
     datesearch: bool,
     datestart: String,
     dateend: String,
+    catalogue: Catalogue,
+    name: String,
+
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +63,8 @@ pub enum Message {
     DateSearch(bool),
     QueryDateChangedstart(String),
     QueryDateChangedend(String),
+    CodeLoaded(String),
+    
 
 }
 
@@ -95,8 +101,15 @@ impl App {
         let products = sort(&conn).unwrap_or_default();
         let promoproducts = sortpromo(&conn).unwrap_or_default(); 
         let datesearch = false;
+        let (catalogue, status) = match load("/var/cache/export_codification.csv") {
+            Ok(catalogue) => { (catalogue, None) }
+            Err(e) => { (Catalogue::new(), Some(format!("Catalogue non chargé: {e:#}"))) }
+        };
         let app = Self {
+            name: String::new(),
             conn,
+            catalogue, 
+            status,
             datesearch,
             code: String::new(),
             date: String::new(),
@@ -105,7 +118,6 @@ impl App {
             datestart: String::new(),
             dateend: String::new(),
             products,
-            status: None,
             tabs: Tabs::Peremptions,
             promoproducts,
             filter: Filter::All,
@@ -115,9 +127,20 @@ impl App {
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
-        
         match message {
-            Message::CodeChanged(v) => self.code = v, 
+            Message::CodeChanged(v) => self.code = v,
+                
+                
+            Message::CodeLoaded(v) => {
+                match compare(&self.code, &self.catalogue) {
+                    Ok(name) => {
+                        self.name = name;
+                    }
+                    Err(e) => { 
+                        self.status = Some(format!("Une erreur s'est produite: {e:#}"));
+                    }
+                }
+            }
             Message::DateChanged(v) => self.date = v,
             Message::QtChanged(v) => self.qt = v,
             Message::SwitchTab(o) => self.tabs = o,
@@ -251,10 +274,11 @@ impl App {
                 };
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.products {
+                    //let name = self.name;
+                    Message::CodeLoaded(code.to_string());
                     if !self.search.is_empty() && !code.contains(&self.search) {
                         continue;
                     }
-
                     let today = Local::now().date_naive();
                     let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap();
                     let mut days = ( d - today).num_days();
@@ -278,6 +302,7 @@ impl App {
                         continue;
                     }
                     let line = row![
+                        text(format!("{}", &self.name)).size(15).width(Length::FillPortion(1)),
                         text(format!("{code}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{date}")).size(15).width(Length::FillPortion(1)),
                         text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),

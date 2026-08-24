@@ -10,4 +10,6 @@ directories = "6"
 chrono = "0.4"
 iced = "0.14.0"
 notify-rust = "4"
+encoding_rs = "0.8.35"
+csv = "1.4.0"
 

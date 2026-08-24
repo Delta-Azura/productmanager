@@ -22,7 +22,12 @@ mod writedb;
 mod sort;
 mod input;
 mod remove;
+pub mod encoding;
 
+
+
+pub use encoding::load;
+pub use encoding::compare;
 pub use opendb::opendb;
 pub use writedb::writedb;
 pub use sort::sort;
