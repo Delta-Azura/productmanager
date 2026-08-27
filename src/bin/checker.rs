@@ -18,10 +18,39 @@
 
 //#![windows_subsystem = "windows"]
 
-use ProductManager::{opendb, sort, sortpromo};
+use ProductManager::{opendb, sort, sortpromo, compare};
 use anyhow::{Context, Result};
 use chrono::{Local, NaiveDate, Days};
 use notify_rust::Notification;
+use std::collections::HashMap;
+use encoding_rs::WINDOWS_1252;
+
+pub type Catalogue = HashMap<String, String>;
+
+pub fn load(csv_path: &str) -> Result<Catalogue> {
+    let mut map = HashMap::new();
+    // defining the delimiters depending on each file 
+    let mut reader = csv::ReaderBuilder::new().delimiter(b';').from_path(csv_path)?;
+    // cloning to keep the value without borrowing
+    let headers = reader.byte_headers()?.clone();
+    // decode: converts Latin-1 (Windows-1252) bytes into a UTF-8 String,
+    // KEEPING the accented characters (é, è, à...) instead of mangling them.
+    let decode = |b: &[u8]| WINDOWS_1252.decode(b).0.into_owned();
+    // idx: finds a column by its name in the header and returns its position.
+    // .trim() strips surrounding whitespace; eq_ignore_ascii_case = case-insensitive match.
+    let idx = |n: &str| headers.iter().position(|h| decode(h).trim().eq_ignore_ascii_case(n));
+    let c = idx("Code produit").expect("Code not found");
+    let d = idx("Désignation").expect("Designation not found");
+    for rec in reader.byte_records() {
+        let rec = rec?;
+        let code = decode(&rec[c]).trim().to_string();
+        if !code.is_empty() {
+            map.insert(code, decode(&rec[d]).trim().to_string());
+        }
+    }
+    Ok(map)
+
+}
 
 
 pub fn  main() -> Result<()> {
@@ -34,9 +63,11 @@ pub fn  main() -> Result<()> {
         let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
             .context("Date not readable in database")?;
         if date <= limit {
+            let catalogue = load("/var/cache/export_codification.csv")?;
+            let name = compare(&code, &catalogue).unwrap_or_else(|_| code.to_string());
             Notification::new()
                 .summary("Produit périmé à retirer")
-                .body(&format!("{}, {qt}", code))
+                .body(&format!("{}, {qt}", name))
                 .show()?;
         }
     }
