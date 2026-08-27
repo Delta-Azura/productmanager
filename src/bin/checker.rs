@@ -67,7 +67,7 @@ pub fn  main() -> Result<()> {
             let name = compare(&code, &catalogue).unwrap_or_else(|_| code.to_string());
             Notification::new()
                 .summary("Produit périmé à retirer")
-                .body(&format!("{}, {qt}", name))
+                .body(&format!("{}, Qt: {qt}", name))
                 .show()?;
         }
     }
