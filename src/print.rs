@@ -15,11 +15,9 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-pub mod expiration;
-pub mod promotion;
-pub mod print;
+
+// src/print.rs
+mod htmlmaker;
 
 
-pub use promotion::{removepromo, sortpromo, writepromo};
-pub use expiration::{opendb, writedb, sort, input, remove, load, compare};
-pub use print::{html};
+pub use htmlmaker::html;

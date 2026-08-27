@@ -15,7 +15,7 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use ProductManager::{opendb, writedb, sort, remove, removepromo, sortpromo, writepromo, load, compare};
+use ProductManager::{opendb, writedb, sort, remove, removepromo, sortpromo, writepromo, load, compare, html};
 use iced::widget::{button, column, row, text, text_input, container};
 use iced::Length;
 use iced::{Element, Task};
@@ -64,6 +64,7 @@ pub enum Message {
     QueryDateChangedstart(String),
     QueryDateChangedend(String),
     CodeLoaded(String),
+    Print,
     
 
 }
@@ -140,6 +141,11 @@ impl App {
                     Err(e) => { 
                         self.status = Some(format!("Une erreur s'est produite: {e:#}"));
                     }
+                }
+            }
+            Message::Print => {
+                if let Err(e) = html(&self.products, &self.catalogue) {
+                    self.status = Some(format!("Impression impossible: {e:#}"));
                 }
             }
             Message::DateChanged(v) => self.date = v,
@@ -237,6 +243,7 @@ impl App {
                 button::primary } else {
                     button::secondary
                 }),
+            button("Imprimer le listing").on_press(Message::Print),
         ].spacing(10);
         match self.tabs {
             Tabs::Peremptions => {
