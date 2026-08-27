@@ -1,4 +1,4 @@
-// Promochecker aims to be a graphical application to manage promotions as well as expiration of products
+// ProductManager aims to be a graphical application to manage promotions as well as expiration of products
 //    Copyright (C) 2026  Alexis/Delta-Azura
 
 //    This program is free software; you can redistribute it and/or modify
