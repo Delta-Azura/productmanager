@@ -25,6 +25,11 @@ use iced::widget::pick_list;
 use std::fmt;
 use std::collections::HashMap;
 use ProductManager::expiration::encoding::Catalogue;
+use directories::ProjectDirs;
+use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
+
 
 
 struct App {
@@ -44,6 +49,9 @@ struct App {
     catalogue: Catalogue,
     name: String,
     area: Option<String>,
+    config: bool,
+    config_file: PathBuf,
+    csv_path: String,
 }
 
 #[derive(Debug, Clone)]
@@ -65,8 +73,7 @@ pub enum Message {
     QueryDateChangedend(String),
     CodeLoaded(String),
     Print,
-    
-
+    LoadPath,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -102,15 +109,32 @@ impl App {
         let products = sort(&conn).unwrap_or_default();
         let promoproducts = sortpromo(&conn).unwrap_or_default(); 
         let datesearch = false;
-        let (catalogue, status) = match load("/var/cache/export_codification.csv") {
-            Ok(catalogue) => { (catalogue, None) }
-            Err(e) => { (Catalogue::new(), Some(format!("Catalogue non chargé: {e:#}"))) }
+        let configdir = ProjectDirs::from("", "", "ProductManager").expect("Unable to find the configuration dir");
+        let config_dir = configdir.config_dir();
+        let config_file = config_dir.join("config.txt");
+        let config = if Path::new(&config_file).exists() {
+            true
+        } else {
+            false
+        };
+        let csv_path = if config {
+            fs::read_to_string(&config_file).unwrap_or_default().trim().to_string()
+        } else {
+            String::new()
+        };
+        let catalogue = if csv_path.is_empty() {
+            Catalogue::new()
+        } else {
+            load(&csv_path).unwrap_or_default()
         };
         let app = Self {
             name: String::new(),
+            config,
+            catalogue: catalogue,
+            csv_path,
+            config_file,
             conn,
-            catalogue, 
-            status,
+            status: None,
             datesearch,
             area: Some(String::new()),
             code: String::new(),
@@ -124,15 +148,17 @@ impl App {
             promoproducts,
             filter: Filter::All,
         };
-        (app, Task::none())
-    
+        let task = if !app.config {
+            Task::done(Message::LoadPath)
+        } else {
+            Task::none()
+        };
+        (app, task)
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::CodeChanged(v) => self.code = v,
-                
-                
+            Message::CodeChanged(v) => self.code = v,                
             Message::CodeLoaded(v) => {
                 match compare(&self.code, &self.catalogue) {
                     Ok((name, area)) => {
@@ -149,6 +175,25 @@ impl App {
                 if let Err(e) = html(&self.products, &self.catalogue, &self.datestart, &self.dateend, self.datesearch) {
                     self.status = Some(format!("Impression impossible: {e:#}"));
                 }
+            }
+            Message::LoadPath => {
+                if self.config == false {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .add_filter("CSV", &["csv"])
+                        .pick_file()
+                    {
+                        self.csv_path = path.display().to_string();
+                        if let Some(parent) = self.config_file.parent() {
+                            fs::create_dir_all(parent).ok();
+                        }
+                        fs::write(&self.config_file, &self.csv_path).ok();
+                        self.config = true
+                    }
+                }
+                match load(&self.csv_path) {
+                    Ok(catalogue) => self.catalogue = catalogue,
+                    Err(e) => self.status = Some(format!("Catalogue non chargé: {e:#}"))
+                };
             }
             Message::DateChanged(v) => self.date = v,
             Message::QtChanged(v) => self.qt = v,
