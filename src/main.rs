@@ -144,7 +144,7 @@ impl App {
                 }
             }
             Message::Print => {
-                if let Err(e) = html(&self.products, &self.catalogue) {
+                if let Err(e) = html(&self.products, &self.catalogue, &self.datestart, &self.dateend, self.datesearch) {
                     self.status = Some(format!("Impression impossible: {e:#}"));
                 }
             }

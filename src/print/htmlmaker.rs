@@ -19,8 +19,12 @@ use std::fs;
 use anyhow::{Result};
 use crate::expiration::encoding::Catalogue;
 use crate::compare;
+use chrono::{Local, NaiveDate};
 
-pub fn html(products: &[(String, String, u32, i64)], catalogue: &Catalogue) -> Result<()> {
+
+pub fn html(products: &[(String, String, u32, i64)], catalogue: &Catalogue, datestart: &String, dateend: &String, datesearch: bool) -> Result<()> {
+    let start = NaiveDate::parse_from_str(datestart, "%d/%m/%Y").ok();
+    let end = NaiveDate::parse_from_str(dateend, "%d/%m/%Y").ok();
     let mut html = String::from(
         "<html><head><meta charset='utf-8'><style>
          body { font-family: sans-serif; }
@@ -32,6 +36,17 @@ pub fn html(products: &[(String, String, u32, i64)], catalogue: &Catalogue) -> R
     html.push_str("<h1>Listing des péremptions</h1>");
     html.push_str("<table><tr><th>Dénomination</th><th>Code</th><th>Date</th><th>Quantité</th></tr>");
     for (code, date, qt, _id) in products {
+        if datesearch == true {
+            let today = Local::now().date_naive();
+            let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap();
+            if let Some(start) = start {
+                if d < start { continue; }
+            }
+
+            if let Some(end) = end {
+                if d > end { continue; }
+            }
+        }
         let name = compare(code, catalogue).unwrap_or_else(|_| code.to_string());
         html.push_str(&format!(
             "<tr><td>{name}</td><td>{code}</td><td>{date}</td><td>{qt}</td></tr>"
