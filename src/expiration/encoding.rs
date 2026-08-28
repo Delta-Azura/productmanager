@@ -19,7 +19,7 @@ use anyhow::Context;
 
 
 
-pub type Catalogue = HashMap<String, String>;
+pub type Catalogue = HashMap<String, (String, String)>;
 
 pub fn load(csv_path: &str) -> Result<Catalogue> {
     let mut map = HashMap::new();
@@ -35,18 +35,23 @@ pub fn load(csv_path: &str) -> Result<Catalogue> {
     let idx = |n: &str| headers.iter().position(|h| decode(h).trim().eq_ignore_ascii_case(n));
     let c = idx("Code produit").expect("Code not found");
     let d = idx("Désignation").expect("Designation not found");
+    let e = idx("Zone Géo.").expect("Zone géo non trouvée");
     for rec in reader.byte_records() {
         let rec = rec?;
         let code = decode(&rec[c]).trim().to_string();
         if !code.is_empty() {
-            map.insert(code, decode(&rec[d]).trim().to_string());
+            // decoding and getting the values
+            let area = decode(&rec[e]).trim().to_string();
+            let name = decode(&rec[d]).trim().to_string();
+            // putting these values in the tuple
+            map.insert(code, (name, area));
         }
     }
     Ok(map)
 
 }
 
-pub fn compare(code: &str, products: &Catalogue) -> Result<String> {
-    let name = products.get(code).context("Failed to get name for this code")?.clone();
-    Ok(name)
+pub fn compare(code: &str, products: &Catalogue) -> Result<(String, String)> {
+    let (name, area) = products.get(code).context("Failed to get name for this code")?.clone();
+    Ok((name, area))
 }

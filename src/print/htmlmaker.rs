@@ -34,7 +34,7 @@ pub fn html(products: &[(String, String, u32, i64)], catalogue: &Catalogue, date
          </style></head><body>"
     );
     html.push_str("<h1>Listing des péremptions</h1>");
-    html.push_str("<table><tr><th>Dénomination</th><th>Code</th><th>Date de péremption</th><th>Quantité</th></tr>");
+    html.push_str("<table><tr><th>Zone Géo</th><th>Dénomination</th><th>Code</th><th>Date de péremption</th><th>Quantité</th></tr>");
     for (code, date, qt, _id) in products {
         if datesearch == true {
             let today = Local::now().date_naive();
@@ -47,9 +47,9 @@ pub fn html(products: &[(String, String, u32, i64)], catalogue: &Catalogue, date
                 if d > end { continue; }
             }
         }
-        let name = compare(code, catalogue).unwrap_or_else(|_| code.to_string());
+        let (name, area) = compare(code, catalogue).unwrap_or_else(|_| (code.to_string(), String::new()));
         html.push_str(&format!(
-            "<tr><td>{name}</td><td>{code}</td><td>{date}</td><td>{qt}</td></tr>"
+            "<tr><td>{area}</td><td>{name}</td><td>{code}</td><td>{date}</td><td>{qt}</td></tr>"
         ));
     }
     html.push_str("</table></body></html>");

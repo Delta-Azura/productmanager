@@ -43,7 +43,7 @@ struct App {
     dateend: String,
     catalogue: Catalogue,
     name: String,
-
+    area: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -112,6 +112,7 @@ impl App {
             catalogue, 
             status,
             datesearch,
+            area: Some(String::new()),
             code: String::new(),
             date: String::new(),
             qt: String::new(),
@@ -134,8 +135,9 @@ impl App {
                 
             Message::CodeLoaded(v) => {
                 match compare(&self.code, &self.catalogue) {
-                    Ok(name) => {
+                    Ok((name, area)) => {
                         self.name = name.clone();
+                        self.area = Some(area);
                         println!("{}", name)
                     }
                     Err(e) => { 
@@ -283,7 +285,7 @@ impl App {
                 };
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.products {
-                    let name = compare(code, &self.catalogue).unwrap_or_else(|_| code.to_string());
+                    let (name, area) = compare(code, &self.catalogue).unwrap_or_else(|_| (code.to_string(), String::new()));
                     let q = self.search.to_lowercase();
                     if !self.search.is_empty() && !code.contains(&self.search) && !name.to_lowercase().contains(&self.search) {
                         continue;
@@ -311,6 +313,7 @@ impl App {
                         continue;
                     }
                     let line = row![
+                        text(format!("{area}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{name}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{code}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{date}")).size(15).width(Length::FillPortion(1)),
