@@ -25,7 +25,6 @@ pub type Catalogue = HashMap<String, (String, String)>;
 pub fn load(csv_path: &str) -> Result<Catalogue> {
     let mut map = HashMap::new();
     // defining the delimiters depending on each file
-    let csv_path = fs::read_to_string(csv_path)?;
     let mut reader = csv::ReaderBuilder::new().delimiter(b';').from_path(csv_path)?;
     // cloning to keep the value without borrowing
     let headers = reader.byte_headers()?.clone();
