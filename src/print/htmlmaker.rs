@@ -34,7 +34,7 @@ pub fn html(products: &[(String, String, u32, i64)], catalogue: &Catalogue, date
          </style></head><body>"
     );
     html.push_str("<h1>Listing des péremptions</h1>");
-    html.push_str("<table><tr><th>Dénomination</th><th>Code</th><th>Date</th><th>Quantité</th></tr>");
+    html.push_str("<table><tr><th>Dénomination</th><th>Code</th><th>Date de péremption</th><th>Quantité</th></tr>");
     for (code, date, qt, _id) in products {
         if datesearch == true {
             let today = Local::now().date_naive();
