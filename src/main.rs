@@ -390,8 +390,11 @@ impl App {
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.promoproducts {
                     let qt = qt.unwrap_or_else(|| 0);
+                    let (name, area) = compare(code, &self.catalogue).unwrap_or_else(|_| (code.to_string(), String::new()));
                     let line = row![
-                        text(format!("{code}")).size(18).width(Length::FillPortion(1)),
+                        text(format!("{name}")).size(15).width(Length::FillPortion(1)),
+                        text(format!("{area}")).size(15).width(Length::FillPortion(1)),
+                        text(format!("{code}")).size(15).width(Length::FillPortion(1)),
                         text(format!("{date}")).size(15).width(Length::FillPortion(1)),
                         text(format!("x{qt}")).size(15).width(Length::FillPortion(1)),
                         button("Supprimer").on_press(Message::RemovePromo(*id)),

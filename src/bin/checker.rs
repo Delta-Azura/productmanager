@@ -22,6 +22,9 @@ use ProductManager::{opendb, sort, sortpromo, compare, dbpath, load};
 use anyhow::{Context, Result};
 use chrono::{Local, NaiveDate, Days};
 use notify_rust::Notification;
+use directories::ProjectDirs;
+use std::fs;
+
 
 pub fn main() -> Result<()> {
     let path = dbpath()?;
@@ -29,13 +32,23 @@ pub fn main() -> Result<()> {
     let list = sort(&conn).context("Failed to sort the database")?;
     let today = Local::now().date_naive();
     let limit = today + Days::new(30);
+    let configdir = ProjectDirs::from("", "", "ProductManager").context("Unable to find configuration dir")?;
+    let config_file = configdir.config_dir().join("config.txt");
+    let content = if config_file.exists() {
+        fs::read_to_string(&config_file).unwrap_or_default()
+    } else {
+        String::new()
+    };
+
+    let line = content.lines().nth(0).unwrap_or("").trim();
+
+    let catalogue = load(line)?;
     for i in list {
         let (code, date, qt, _) = i;
         let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
             .context("Date not readable in database")?;
         if date <= limit {
-            let catalogue = load("/var/cache/export_codification.csv")?;
-            let (name, area) = compare(&code, &catalogue).unwrap_or_default();
+            let (name, area) = compare(&code, &catalogue).unwrap_or_else(|_| (code.to_string(), String::new()));
             Notification::new()
                 .summary("Produit périmé à retirer")
                 .body(&format!("{}, Qt: {qt}, Zone: {area}", name))
@@ -48,12 +61,13 @@ pub fn main() -> Result<()> {
     let limit = today + Days::new(1);
     for i in list {
         let (code, date, _qt, _) = i;
+        let (name, area) = compare(&code, &catalogue).unwrap_or_else(|_| (code.to_string(), String::new()));
         let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
             .context("Date not readable in database")?;
         if date <= limit {
             Notification::new()
                 .summary("La promotion pour le produit suivant se termine demain")
-                .body(&format!("{}", code))
+                .body(&format!("{name}, Zone: {area}, Code: {code}"))
                 .show()?;
         }
     }
