@@ -120,7 +120,7 @@ impl App {
             false
         };
         let csv_path = if config {
-            fs::read_to_string(&config_file).unwrap_or_default().trim().to_string()
+            fs::read_to_string(&config_file).unwrap_or_default().lines().nth(0).unwrap_or("").trim().to_string()
         } else {
             String::new()
         };
