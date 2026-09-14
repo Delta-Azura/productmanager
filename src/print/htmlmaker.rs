@@ -37,7 +37,7 @@ pub fn html(products: &[(String, String, u32, i64)], catalogue: &Catalogue, date
     html.push_str("<table><tr><th>Zone Géo</th><th>Dénomination</th><th>Code</th><th>Date de péremption</th><th>Quantité</th></tr>");
     for (code, date, qt, _id) in products {
         if datesearch == true {
-            let today = Local::now().date_naive();
+            let _today = Local::now().date_naive();
             let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap();
             if let Some(start) = start {
                 if d < start { continue; }
