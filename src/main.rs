@@ -22,8 +22,6 @@ use iced::{Element, Task};
 use rusqlite::Connection;
 use chrono::{Local, NaiveDate};
 use iced::widget::pick_list;
-use std::fmt;
-use std::collections::HashMap;
 use ProductManager::expiration::encoding::Catalogue;
 use directories::ProjectDirs;
 use std::fs;
@@ -161,7 +159,7 @@ impl App {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::CodeChanged(v) => self.code = v,                
-            Message::CodeLoaded(v) => {
+            Message::CodeLoaded(_v) => {
                 match compare(&self.code, &self.catalogue) {
                     Ok((name, area)) => {
                         self.name = name.clone();
@@ -333,13 +331,13 @@ impl App {
                 let mut list = column![].spacing(20);
                 for (code, date, qt, id) in &self.products {
                     let (name, area) = compare(code, &self.catalogue).unwrap_or_else(|_| (code.to_string(), String::new()));
-                    let q = self.search.to_lowercase();
+                    let _q = self.search.to_lowercase();
                     if !self.search.is_empty() && !code.contains(&self.search) && !name.to_lowercase().contains(&self.search) {
                         continue;
                     }
                     let today = Local::now().date_naive();
                     let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap();
-                    let mut days = ( d - today).num_days();
+                    let days = ( d - today).num_days();
                     if self.datesearch == true {
                         if let Some(start) = start {
                             if d < start { continue; }
@@ -349,7 +347,7 @@ impl App {
                             if d > end { continue; }
                         }
                     }
-                    let mut color = if days < 7 {
+                    let _color = if days < 7 {
                         iced::Color::from_rgb(0.9, 0.3, 0.3)
                     } else if days < 30 {
                         iced::Color::from_rgb(0.9, 0.6, 0.2)
