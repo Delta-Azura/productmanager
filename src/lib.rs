@@ -21,5 +21,5 @@ pub mod print;
 
 
 pub use promotion::{removepromo, sortpromo, writepromo};
-pub use expiration::{opendb, writedb, sort, input, remove, load, compare};
+pub use expiration::{opendb, writedb, sort, input, remove, load, compare, dbpath};
 pub use print::{html};

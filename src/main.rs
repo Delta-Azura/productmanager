@@ -15,7 +15,7 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use ProductManager::{opendb, writedb, sort, remove, removepromo, sortpromo, writepromo, load, compare, html};
+use ProductManager::{opendb, writedb, sort, remove, removepromo, sortpromo, writepromo, load, compare, html, dbpath};
 use iced::widget::{button, column, row, text, text_input, container};
 use iced::Length;
 use iced::{Element, Task};
@@ -105,7 +105,9 @@ impl std::fmt::Display for Filter {
 
 impl App {
     pub fn new() -> (Self, Task<Message>) {
-        let conn = opendb().expect("Impossible to open database");
+        //let conn = opendb().expect("Impossible to open database");
+        let path = dbpath().expect("Impossible de déterminer le chemin de la base");
+        let conn = opendb(&path).expect("Impossible d'ouvrir la base de données");
         let products = sort(&conn).unwrap_or_default();
         let promoproducts = sortpromo(&conn).unwrap_or_default(); 
         let datesearch = false;

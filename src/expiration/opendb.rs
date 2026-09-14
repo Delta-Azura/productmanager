@@ -17,15 +17,23 @@
 
 use anyhow::{Context, Result};
 use rusqlite::Connection;
-use directories::ProjectDirs;
 use std::fs;
+use std::time::Duration;
+use std::path::Path;
 
-pub fn opendb() -> Result<Connection> {
-    let db = ProjectDirs::from("com", "PromoChecker", "PromoChecker").context("Unable to locate db")?;
-    let folder = db.data_local_dir();
-    fs::create_dir_all(folder)?;
-    let path = folder.join("database.db");
+pub fn opendb(path: &Path) -> Result<Connection> {
+    
+    let parent = path.parent().context("Invalid path")?;
+    fs::create_dir_all(parent)?;
+    let backups = parent.join("backups");
+    fs::create_dir_all(&backups)?;
+    let today = chrono::Local::now().date_naive();
+    let backup_path = backups.join(format!("database-{today}.db"));
+    if path.exists() && !backup_path.exists() {
+        fs::copy(path, &backup_path)?;
+    }
     let db = Connection::open(path)?;
+    db.busy_timeout(Duration::from_secs(10))?;
     Ok(db)
     
 }

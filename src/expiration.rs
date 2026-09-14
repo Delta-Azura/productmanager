@@ -22,6 +22,7 @@ mod writedb;
 mod sort;
 mod input;
 mod remove;
+mod dbpath;
 pub mod encoding;
 
 
@@ -33,3 +34,4 @@ pub use writedb::writedb;
 pub use sort::sort;
 pub use input::input;
 pub use remove::remove;
+pub use dbpath::dbpath;
