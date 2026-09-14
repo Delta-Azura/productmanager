@@ -1,4 +1,4 @@
-// ProductManager aims to be a graphical application to manage promotions of products
+// ProductManager aims to be a graphical application to manage promotions of products and their expiration dates
 //    Copyright (C) 2026  Alexis/Delta-Azura
 
 //    This program is free software; you can redistribute it and/or modify
