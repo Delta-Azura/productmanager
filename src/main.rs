@@ -104,7 +104,6 @@ impl std::fmt::Display for Filter {
 
 impl App {
     pub fn new() -> (Self, Task<Message>) {
-        //let conn = opendb().expect("Impossible to open database");
         let path = dbpath().expect("Impossible de déterminer le chemin de la base");
         let conn = opendb(&path).expect("Impossible d'ouvrir la base de données");
         let products = sort(&conn).unwrap_or_default();
@@ -173,9 +172,20 @@ impl App {
                 }
             }
             Message::Print => {
-                if let Err(e) = html(&self.products, &self.catalogue, &self.datestart, &self.dateend, self.datesearch) {
-                    self.status = Some(format!("Impression impossible: {e:#}"));
+                if self.tabs == Tabs::Promotions {
+                    let promopd: Vec<(String, String, u32, i64)> = self.promoproducts
+                        .iter()
+                        .map(|(a, b, opt, c)| (a.clone(), b.clone(), opt.unwrap_or(0), *c))
+                        .collect();
+                    if let Err(e) = html(&promopd, &self.catalogue, &self.datestart, &self.dateend, self.datesearch) {
+                        self.status = Some(format!("Impression impossible: {e:#}"));
+                    }
+                } else {
+                    if let Err(e) = html(&self.products, &self.catalogue, &self.datestart, &self.dateend, self.datesearch) {
+                        self.status = Some(format!("Impression impossible: {e:#}"));
+                    }
                 }
+                
             }
             Message::LoadPath => {
                 if self.config == false {
@@ -219,11 +229,11 @@ impl App {
                     match sort(&self.conn) {
                         Ok(list) => self.products = list,
                         Err(e) => self.status = Some(format!("Impossible de lire dans la base de donnée {e:#}")),
-
                     }
                     self.code.clear();
                     self.date.clear();
                     self.qt.clear();
+                    
                 } else {
                     self.status = Some("Impossible de parser la quantité indiquée".to_string());
                 }
